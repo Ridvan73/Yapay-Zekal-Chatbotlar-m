@@ -1,0 +1,134 @@
+HASTALIKLAR İÇİN PYTHONLA YAPAY ZEKALI HASTALIK DANIŞMA CHATBOTU
+Bu chatbotun görevi, hastalıklar hakkında bilgi vermek ve kullanıcılarla
+sohbet etmektir. Bu chatbot, Rasa adlı bir çerçeve kullanarak Python ile
+yapılmıştır. Bu chatbot, kullanıcının sorduğu hastalığın belirtilerini,
+tedavisini ve diğer bilgilerini bir API'den getirir ve kullanıcıya sunar.
+Ayrıca, bu chatbot, kullanıcının ilgisini çekmek ve eğlendirmek için çeşitli
+içerikler üretebilir. Örneğin, bir hastalık hakkında bir şiir, bir hikaye,
+bir şarkı veya bir karikatür oluşturabilir. Bu chatbot, yapay zeka ile çalışır 
+ve kendini geliştirmeye devam eder.
+Python ile hastalıklar için bir yapay zekalı chatbot yapmak için aşağıdaki 
+adımları takip edebilirsiniz:
+- Bir chatbot projesi oluşturun ve gerekli kütüphaneleri ve çerçeveleri yükleyin.
+Örneğin, Rasa kullanıyorsanız, rasa init komutu ile bir proje oluşturabilirsiniz.
+- Chatbotunuzun amacına ve işlevselliğine uygun olarak, diyalog akışlarını, niyetleri, 
+varlıkları, eylemleri ve cevapları tanımlayın. Örneğin, Rasa kullanıyorsanız, domain.yml, 
+nlu.yml, stories.yml ve actions.py dosyalarını düzenleyebilirsiniz.
+- Chatbotunuzu eğitmek için yeterli miktarda veri toplayın veya oluşturun. Örneğin, Rasa 
+kullanıyorsanız, rasa train komutu ile chatbotunuzu eğitebilirsiniz.
+- Chatbotunuzu test etmek için farklı senaryoları deneyin ve performansını değerlendirin. 
+Örneğin, Rasa kullanıyorsanız, rasa shell komutu ile chatbotunuzla konuşabilirsiniz.
+- Chatbotunuzu dağıtmak için uygun bir platform seçin ve gerekli ayarları yapın. Örneğin, 
+chatbotunuzu bir web sitesine, bir mobil uygulamaya veya bir sosyal medya platformuna entegre
+edebilirsiniz.
+Bu önerilere göre pythonla bir yapay zekalı chatbota ait kodlar aşağıda verilmiştir:
+1. Dosya 
+```python
+# domain.yml
+version: "2.0"
+intents:
+  - greet
+  - ask_disease
+  - ask_symptoms
+  - ask_treatment
+  - goodbye
+entities:
+  - disease
+responses:
+  utter_greet:
+  - text: "Merhaba, ben hastalıklar hakkında bilgi veren bir chatbotum. Sormak
+istediğiniz bir hastalık var mı?"
+  utter_ask_disease:
+  - text: "Hangi hastalık hakkında bilgi almak istiyorsunuz?"
+  utter_ask_symptoms:
+  - text: "{disease} hastalığının belirtileri şunlardır: {symptoms}"
+  utter_ask_treatment:
+  - text: "{disease} hastalığının tedavisi şunlardır: {treatment}"
+  utter_goodbye:
+  - text: "Görüşmek üzere, kendinize iyi bakın."
+actions:
+  - action_fetch_disease_info
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
+```
+2. Dosya ```python
+# nlu.yml
+version: "2.0"
+nlu:
+- intent: greet
+  examples: |
+    - Merhaba
+    - Selam
+    - Nasılsın
+- intent: ask_disease
+  examples: |
+    - [Grip](disease) hakkında bilgi almak istiyorum
+    - [Kanser](disease) nedir?
+    - [Astım](disease) nasıl oluşur?
+- intent: ask_symptoms
+  examples: |
+    - [Grip](disease) belirtileri nelerdir?
+    - [Kanser](disease) nasıl anlaşılır?
+    - [Astım](disease)ın belirtileri neler?
+- intent: ask_treatment
+  examples: |
+    - [Grip](disease) nasıl tedavi edilir?
+    - [Kanser](disease) için ne yapmalıyım?
+    - [Astım](disease)ın tedavisi var mı?
+- intent: goodbye
+  examples: |
+    - Görüşürüz
+    - Teşekkürler
+    - Hoşçakal
+```
+3. Dosya ```python
+# stories.yml
+version: "2.0"
+stories:
+- story: happy path
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: ask_disease
+  - action: action_fetch_disease_info
+  - action: utter_ask_symptoms
+  - intent: ask_treatment
+  - action: action_fetch_disease_info
+  - action: utter_ask_treatment
+  - intent: goodbye
+  - action: utter_goodbye
+```
+4. Dosya ```python
+# actions.py
+from typing import Any, Text, Dict, List
+from rasa_sdk import Action, Tracker
+from rasa_sdk.executor import CollectingDispatcher
+import requests
+class ActionFetchDiseaseInfo(Action):
+    def name(self) -> Text:
+        return "action_fetch_disease_info"
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        disease = tracker.get_slot("disease")
+        if disease:
+            response = requests.get(f"https://api.disease.info/v1/diseases/{disease}")
+            if response.status_code == 200:
+                data = response.json()
+                symptoms = ", ".join(data["symptoms"])
+                treatment = ", ".join(data["treatment"])
+                dispatcher.utter_message(response_message=f"{disease} hastalığı hakkında bilgi buldum.")
+                return [SlotSet("symptoms", symptoms), SlotSet("treatment", treatment)]
+            else:
+                dispatcher.utter_message(response_message=f"{disease} hastalığı hakkında bilgi bulamadım.")
+                return [SlotSet("disease", None)]
+        else:
+            dispatcher.utter_message(response_message="Lütfen bir hastalık ismi giriniz.")
+            return []
+```
+ Bu kodlar, Rasa adlı bir çerçeve kullanarak hastalıklar için bir yapay zekalı chatbot yapmanızı sağlar. Rasa, doğal dil işleme ve makine öğrenimi ile chatbotlar oluşturmak için kullanılan açık kaynaklı bir araçtır. Kodlarda dört ana dosya vardır:
+- domain.yml: Bu dosya, chatbotunuzun niyetlerini, varlıklarını, cevaplarını ve eylemlerini tanımlar. Niyetler, kullanıcının amacını belirten cümlelerdir. Varlıklar, niyetler içindeki önemli bilgilerdir. Cevaplar, chatbotunuzun kullanıcıya verdiği mesajlardır. Eylemler, chatbotunuzun gerçekleştirdiği işlevlerdir. Örneğin, bu dosyada, hastalık ismi almak için ask_disease niyeti, hastalık ismini tanımak için disease varlığı, hastalık belirtilerini vermek için utter_ask_symptoms cevabı ve hastalık bilgisi getirmek için action_fetch_disease_info eylemi tanımlanmıştır.
+- nlu.yml: Bu dosya, chatbotunuzun niyetlerini ve varlıklarını tanıması için gerekli olan verileri içerir. Bu dosyada, her niyet için örnek cümleler ve her varlık için örnek değerler verilir. Örneğin, bu dosyada, ask_disease niyeti için "Grip hakkında bilgi almak istiyorum" ve disease varlığı için "Grip" örnekleri verilmiştir.
+- stories.yml: Bu dosya, chatbotunuzun diyalog akışlarını tanımlar. Bu dosyada, bir hikaye, bir kullanıcı ve chatbot arasındaki etkileşimi temsil eder. Bir hikaye, niyet, cevap ve eylem adımlarından oluşur. Örneğin, bu dosyada, happy path adlı bir hikaye, kullanıcının selam vermesi, hastalık sorması, belirti ve tedavi sorması ve veda etmesi gibi adımları içerir.
+- actions.py: Bu dosya, chatbotunuzun özel eylemlerini tanımlar. Bu dosyada, bir eylem, bir sınıf olarak tanımlanır ve bir isim, bir çalıştırma fonksiyonu ve bir dönüş değeri içerir. Örneğin, bu dosyada, action_fetch_disease_info adlı bir eylem, bir hastalık ismi alır, bir API'den hastalık bilgisi ister, belirti ve tedavi bilgilerini döndürür ve kullanıcıya bir mesaj gönderir.

@@ -1,0 +1,53 @@
+# Örnek bir makine öğrenmesi modeli
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Veri setini yükleme
+data = pd.read_csv('hastaların_verileri.csv')
+
+# Özellikleri ve hedefi ayırma
+X = data.drop('hedef', axis=1)
+y = data['hedef']
+
+# Eğitim ve test setlerine ayırma
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Modeli eğitme
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Tahmin yapma
+predictions = model.predict(X_test)
+
+# Modelin doğruluğunu değerlendirme
+accuracy = accuracy_score(y_test, predictions)
+print(f'Model Doğruluğu: {accuracy}')
+
+Bu kod, bir veri setinden özellikleri ayırma, bir model eğitme ve modelin doğruluğunu değerlendirme işlemlerini içermektedir.
+
+Python kodunun her bir adımını detaylı bir şekilde açıklayayım:
+Kütüphaneleri İçe Aktarma: Kod, veri işleme için pandas ve makine öğrenmesi modellemesi için sklearn kütüphanelerini içe aktarır.
+Veri Setini Yükleme: pd.read_csv('hastaların_verileri.csv') fonksiyonu kullanılarak, hastaların verilerini içeren bir CSV dosyası yüklenir.
+Özellikleri ve Hedefi Ayırma: X = data.drop('hedef', axis=1) satırı, veri setindeki hedef sütunu dışındaki tüm özellikleri içeren bir DataFrame oluşturur. 
+y = data['hedef'] satırı ise hedef sütunu alır.
+Eğitim ve Test Setlerine Ayırma: train_test_split fonksiyonu, veri setini eğitim ve test setlerine ayırır. Bu, modelin performansını değerlendirmek için kullanılır.
+Modeli Eğitme: RandomForestClassifier kullanılarak bir rastgele orman sınıflandırıcısı oluşturulur ve eğitim verileri ile eğitilir.
+Tahmin Yapma: Eğitilmiş model, test veri seti üzerinde tahminler yapar.
+Modelin Doğruluğunu Değerlendirme: accuracy_score fonksiyonu, modelin tahminlerinin doğruluğunu hesaplar ve ekrana yazdırır.
+Bu Python kodunu çalıştırmak için aşağıdaki adımları izleyebilirsiniz:
+1. Python Yükleme:
+   Eğer bilgisayarınızda Python yüklü değilse, Python'un resmi web sitesinden https://www.python.org/downloads/ Python'u indirip yükleyin.
+2. Gerekli Kütüphaneleri Yükleme:
+   Kodda kullanılan pandas ve sklearn kütüphanelerini yüklemek için terminal veya komut istemcisine aşağıdaki komutları yazın:  
+   pip install pandas
+   pip install scikit-learn  
+3. Veri Dosyasını Hazırlama:
+   Kodun çalışması için hastaların_verileri.csv adında bir CSV dosyasına ihtiyacınız var. Bu dosya, modelin eğitimi için kullanılacak gerçek dünya verilerini içermelidir.
+4. Kodu Kaydetme:
+   Yukarıda verilen Python kodunu bir metin editörüne yapıştırın ve .py uzantısı ile kaydedin (örneğin, model.py).
+5. Kodu Çalıştırma:
+   Terminal veya komut istemcisine gidin, kodun kaydedildiği dizine geçin ve aşağıdaki komutu yazarak kodu çalıştırın:
+   python model.py
+Bu adımları takip ederek, verdiğim örnek makine öğrenmesi modelini çalıştırabilirsiniz. Ancak, bu kodun gerçek hastalar üzerinde kullanılabilmesi için gerekli tüm etik ve yasal onayların alınmış olması gerektiğini unutmayın. 

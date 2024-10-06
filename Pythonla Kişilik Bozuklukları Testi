@@ -1,0 +1,156 @@
+Kişilik Bozuklukları Testi
+
+import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import numpy as np
+import shap
+
+# 1. Veri setini yükleme
+try:
+    data = pd.read_csv('kisilik_bozukluklari_verileri.csv')  # CSV dosyasının adı
+except FileNotFoundError:
+    print("Veri seti bulunamadı. Lütfen dosya yolunu kontrol edin.")
+    exit()
+
+# 2. Veri setinin içeriğini kontrol etme
+print(data.head())
+print(data.info())
+
+# 3. Özellikleri ve hedefi ayırma
+if 'hedef' in data.columns:
+    X = data.drop('hedef', axis=1)  # Özellikler
+    y = data['hedef']                # Kişilik bozukluğu etiketleri
+else:
+    print("'hedef' sütunu bulunamadı.")
+    exit()
+
+# 4. Veriyi normalleştirme
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 5. Eğitim ve test setlerine ayırma
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# 6. Modelleri tanımlama
+models = {
+    'RandomForest': RandomForestClassifier(random_state=42),
+    'LogisticRegression': LogisticRegression(),
+    'SVM': SVC(probability=True),
+    'KNN': KNeighborsClassifier(),
+    'GradientBoosting': GradientBoostingClassifier()
+}
+
+# 7. Model performansını değerlendirme
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
+    print(f'{name} Doğruluğu: {accuracy:.2f}')
+
+# 8. Hiperparametre ayarlaması (örnek: Random Forest için)
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10]
+}
+
+grid_search = GridSearchCV(RandomForestClassifier(random_state=42), param_grid, cv=5)
+grid_search.fit(X_train, y_train)
+
+print(f'En iyi parametreler: {grid_search.best_params_}')
+
+# 9. Çapraz doğrulama
+cross_val_scores = cross_val_score(RandomForestClassifier(**grid_search.best_params_, random_state=42), X_scaled, y, cv=5)
+print(f'Çapraz Doğrulama Skoru: {cross_val_scores.mean():.2f}')
+
+# 10. ROC eğrisi çizimi
+model = RandomForestClassifier(**grid_search.best_params_, random_state=42)
+model.fit(X_train, y_train)
+y_scores = model.predict_proba(X_test)[:, 1]
+fpr, tpr, thresholds = roc_curve(y_test, y_scores)
+roc_auc = auc(fpr, tpr)
+
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC Eğrisi (area = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc='lower right')
+plt.show()
+
+# 11. Özelliklerin önemini analiz etme
+feature_importances = model.feature_importances_
+indices = np.argsort(feature_importances)[::-1]
+
+# Özelliklerin sıralanması
+print("Özelliklerin Önemi:")
+for f in range(X.shape[1]):
+    print(f"{f + 1}. Özellik: {X.columns[indices[f]]} (Önemi: {feature_importances[indices[f]]:.4f})")
+
+# 12. SHAP ile model tahminlerinin açıklanması
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_scaled)
+
+# SHAP değerlerinin görselleştirilmesi
+shap.summary_plot(shap_values, X_scaled, feature_names=X.columns)
+
+# 13. Örnek Kullanım: Kullanıcıdan veri alma
+def predict_personality_disorder(input_data):
+    # Giriş verisini ölçeklendirme
+    scaled_input = scaler.transform([input_data])
+    prediction = model.predict(scaled_input)
+    return prediction[0]
+
+# Örnek giriş verisi (kendi özelliklerinize göre düzenleyin)
+input_data = [1.2, 0.5, -0.3, 0.7]  # Bu değerler özelliklerinize göre değiştirin
+predicted_disorder = predict_personality_disorder(input_data)
+print(f'Tahmin Edilen Kişilik Bozukluğu: {predicted_disorder}')
+
+Bu Python kodu, bir kişilik bozukluğu veri seti üzerinde çeşitli makine öğrenimi algoritmalarını kullanarak model eğitimi ve değerlendirmesi yapmaktadır. Kodta gerçekleşenler:
+
+1. Veri Setini Yükleme
+CSV formatındaki veri seti kisilik_bozukluklari_verileri.csv dosyasından yükleniyor.
+Dosya bulunamazsa bir hata mesajı veriyor.
+2. Veri Setinin İçeriğini Kontrol Etme
+Veri setinin ilk birkaç satırı ve genel bilgileri (info()) görüntüleniyor.
+3. Özellikleri ve Hedefi Ayırma
+Hedef sütunu hedef ise, bu sütun hedef değişken olarak ayrılıyor, diğer sütunlar ise özellikler olarak alınıyor.
+4. Veriyi Normalleştirme
+StandardScaler kullanarak veriler normalize ediliyor. Bu, modelin daha iyi öğrenmesini sağlar.
+5. Eğitim ve Test Setlerine Ayırma
+Veri, eğitim (%80) ve test (%20) setlerine ayrılıyor.
+6. Modelleri Tanımlama
+Beş farklı makine öğrenimi modeli tanımlanıyor:
+Random Forest
+Lojistik Regresyon
+Destek Vektör Makineleri (SVM)
+K-En Yakın Komşu (KNN)
+Gradient Boosting
+7. Model Performansını Değerlendirme
+Her bir model eğitiliyor ve test verisi üzerinde doğruluk skoru hesaplanıyor.
+8. Hiperparametre Ayarlaması
+Random Forest modeli için hiperparametre ayarlaması yapılıyor. GridSearchCV ile en iyi parametreler belirleniyor.
+9. Çapraz Doğrulama
+En iyi parametreler kullanılarak çapraz doğrulama ile modelin performansı değerlendiriliyor.
+10. ROC Eğrisi Çizimi
+ROC eğrisi çizilerek modelin doğru ve yanlış pozitif oranları görselleştiriliyor.
+11. Özelliklerin Önemini Analiz Etme
+Eğitimden elde edilen özelliklerin önem dereceleri hesaplanıyor ve sıralanıyor.
+12. SHAP ile Model Tahminlerinin Açıklanması
+SHAP (SHapley Additive exPlanations) değerleri kullanılarak modelin tahminleri açıklanıyor ve görselleştiriliyor.
+13. Örnek Kullanım
+Kullanıcıdan veri alıp tahmin yapacak bir fonksiyon tanımlanıyor. Örnek giriş verisiyle modelden tahmin alınıyor.
+Kullanım İçin Notlar
+Kodda belirtilen giriş verisi (input_data) özelliklerinize göre değiştirilmeli.
+kisilik_bozukluklari_verileri.csv dosyasının doğru bir şekilde bulunduğundan emin olun.
+
